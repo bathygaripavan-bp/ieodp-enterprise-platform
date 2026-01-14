@@ -1,0 +1,80 @@
+spring:
+  application:
+    name: IEODP
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/ieodp_db2
+    username: root
+    password: 1234
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+    open-in-view: false
+
+
+# JWT Configuration
+jwt:
+  secret: 7a82f273a4f95e6fa368cecb55d9a21d7a82f273a4f95e6fa368cecb55d9a21d
+  expiration: 3600000  # 1 hour in milliseconds
+  refresh-expiration: 86400000  # 24 hours in milliseconds
+
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    com.ieodp: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n [%X{correlationId}]"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n [%X{correlationId}]"
+  file:
+    name: logs/ieodpfile.log
+    max-size: 10MB
+    max-history: 30
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# OpenAPI/Swagger Configuration
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+
+# Python Service Configuration
+python:
+  service:
+    base-url: http://localhost:8000
+    connect-timeout: 5000
+    read-timeout: 10000
+
+# Frontend Connection Configuration
+app:
+  cors:
+    allowed-origins: http://localhost:3000,http://localhost:*

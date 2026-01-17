@@ -39,7 +39,7 @@ export default function SystemHealth() {
       console.error("Failed to load user role stats for system health", err);
       setError(
         err?.response?.data?.message ||
-          "Failed to load system health metrics. Please try again."
+        "Failed to load system health metrics. Please try again."
       );
     } finally {
       setLoading(false);
@@ -65,7 +65,7 @@ export default function SystemHealth() {
       </Typography>
 
       <Grid container spacing={3}>
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Paper sx={{ p: 3, height: "100%" }}>
             <Typography variant="h6" mb={2}>
               Active Users by Role (Live)
@@ -101,7 +101,7 @@ export default function SystemHealth() {
           </Paper>
         </Grid>
 
-        <Grid item xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" mb={2}>
               System Load Over Time (%)

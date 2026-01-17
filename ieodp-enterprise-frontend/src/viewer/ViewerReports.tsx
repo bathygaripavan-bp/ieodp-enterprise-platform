@@ -36,7 +36,7 @@ export default function ViewerReports() {
 
       <Grid container spacing={3}>
         {reports.map((report, idx) => (
-          <Grid size={{ xs: 12, md: 4 }} item key={report.id}>
+          <Grid size={{ xs: 12, md: 4 }} key={report.id}>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

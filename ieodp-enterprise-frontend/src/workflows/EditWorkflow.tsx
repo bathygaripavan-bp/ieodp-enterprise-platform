@@ -51,10 +51,18 @@ export default function EditWorkflow() {
         e.preventDefault();
         setSaving(true);
         try {
-            await workflowsApi.update(Number(id), workflow);
+            const payload = {
+                title: workflow.title,
+                description: workflow.description,
+                priority: workflow.priority,
+                category: workflow.category,
+                assignedToId: workflow.assignedToId ?? workflow.assignedTo?.id ?? null
+            };
+            await workflowsApi.update(Number(id), payload);
             navigate("/workflows");
         } catch (err: any) {
-            alert("Update failed");
+            console.error("Update failed:", err.response?.data || err);
+            alert("Update failed: " + (err.response?.data?.message || "Internal Server Error"));
         } finally {
             setSaving(false);
         }

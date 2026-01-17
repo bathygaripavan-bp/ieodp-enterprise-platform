@@ -36,7 +36,6 @@ public class WorkflowController {
     private final WorkflowService workflowService;
     private final WorkflowIntegrationService workflowIntegrationService;
 
-
     // -------------------------------
     // CREATE WORKFLOW
     // Admin + Manager
@@ -52,7 +51,6 @@ public class WorkflowController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(response, "Workflow created successfully"));
     }
-
 
     // -------------------------------
     // GET WORKFLOW BY ID
@@ -70,7 +68,6 @@ public class WorkflowController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-
     // -------------------------------
     // LIST ALL WORKFLOWS (Paginated)
     // Admin + Manager + Reviewer: all workflows
@@ -79,15 +76,13 @@ public class WorkflowController {
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'REVIEWER', 'VIEWER')")
     public ResponseEntity<ApiResponse<Page<WorkflowResponse>>> getAllWorkflows(
-            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
-            Pageable pageable,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             @AuthenticationPrincipal User currentUser) {
 
         Page<WorkflowResponse> workflows = workflowService.getAllWorkflows(pageable, currentUser);
 
         return ResponseEntity.ok(ApiResponse.success(workflows));
     }
-
 
     // -------------------------------
     // SEARCH WORKFLOWS
@@ -98,18 +93,14 @@ public class WorkflowController {
     public ResponseEntity<ApiResponse<Page<WorkflowResponse>>> searchWorkflows(
             @RequestParam(required = false) WorkflowState state,
             @RequestParam(required = false) String search,
-            @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fromDate,
-            @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime toDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime toDate,
             Pageable pageable) {
 
-        Page<WorkflowResponse> workflows =
-                workflowService.searchWorkflows(state, search, fromDate, toDate, pageable);
+        Page<WorkflowResponse> workflows = workflowService.searchWorkflows(state, search, fromDate, toDate, pageable);
 
         return ResponseEntity.ok(ApiResponse.success(workflows));
     }
-
 
     // -------------------------------
     // UPDATE WORKFLOW
@@ -122,30 +113,26 @@ public class WorkflowController {
             @Valid @RequestBody WorkflowUpdateRequest request,
             @AuthenticationPrincipal User currentUser) throws JsonProcessingException {
 
-        WorkflowResponse response =
-                workflowService.updateWorkflow(id, request, currentUser);
+        WorkflowResponse response = workflowService.updateWorkflow(id, request, currentUser);
 
         return ResponseEntity.ok(ApiResponse.success(response, "Workflow updated successfully"));
     }
-
 
     // -------------------------------
     // TRANSITION WORKFLOW (Approve/Reject)
     // Admin + Reviewer
     // -------------------------------
     @PostMapping("/{id}/transition")
-    @PreAuthorize("hasAnyRole('ADMIN', 'REVIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'REVIEWER', 'MANAGER')")
     public ResponseEntity<ApiResponse<WorkflowResponse>> transitionWorkflow(
             @PathVariable Long id,
             @Valid @RequestBody WorkflowTransitionRequest request,
             @AuthenticationPrincipal User currentUser) throws JsonProcessingException {
 
-        WorkflowResponse response =
-                workflowService.transitionWorkflow(id, request, currentUser);
+        WorkflowResponse response = workflowService.transitionWorkflow(id, request, currentUser);
 
         return ResponseEntity.ok(ApiResponse.success(response, "Workflow transitioned successfully"));
     }
-
 
     // -------------------------------
     // DELETE WORKFLOW
@@ -162,7 +149,6 @@ public class WorkflowController {
         return ResponseEntity.ok(ApiResponse.success(null, "Workflow deleted successfully"));
     }
 
-
     // -------------------------------
     // TRIGGER WORKFLOW (Python/Ai Integration)
     // Admin + Manager
@@ -174,8 +160,8 @@ public class WorkflowController {
             @Valid @RequestBody WorkflowTriggerRequest request,
             @AuthenticationPrincipal User currentUser) {
 
-        WorkflowTriggerResponse response =
-                workflowIntegrationService.triggerWorkflow(workflowName, request, currentUser);
+        WorkflowTriggerResponse response = workflowIntegrationService.triggerWorkflow(workflowName, request,
+                currentUser);
 
         return ResponseEntity.ok(ApiResponse.success(response, "Workflow triggered successfully"));
     }

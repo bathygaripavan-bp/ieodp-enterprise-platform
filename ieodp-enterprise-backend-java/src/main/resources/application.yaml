@@ -70,11 +70,11 @@ springdoc:
 # Python Service Configuration
 python:
   service:
-    base-url: http://localhost:8000
+    base-url: http://18.204.221.219:8000,http://localhost:8000
     connect-timeout: 5000
     read-timeout: 10000
 
 # Frontend Connection Configuration
 app:
   cors:
-    allowed-origins: http://localhost:3000,http://localhost:*
+    allowed-origins: http://localhost:3000,http://localhost:*,http://13.235.94.38:30080,http://18.204.221.219,http://18.204.221.219:80

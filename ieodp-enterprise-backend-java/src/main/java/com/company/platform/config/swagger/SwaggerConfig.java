@@ -34,6 +34,7 @@ public class SwaggerConfig {
                                 .url("https://ieodp.com")))
                 .servers(List.of(
                         new Server().url("http://localhost:8080").description("Development Server"),
+                        new Server().url("http://18.204.221.219:8080").description("Remote Server"),
                         new Server().url("https://api.ieodp.com").description("Production Server")
                 ))
                 .components(new Components()

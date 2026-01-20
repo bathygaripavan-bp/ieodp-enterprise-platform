@@ -3,7 +3,7 @@ spring:
     name: IEODP
 
   datasource:
-    url: jdbc:mysql://localhost:3306/ieodp_db2,jdbc:mysql://184.72.113.212:3306/ieodp_db2.
+    url: jdbc:mysql://localhost:3306/ieodp_db2
 
     username: root
     password: 1234

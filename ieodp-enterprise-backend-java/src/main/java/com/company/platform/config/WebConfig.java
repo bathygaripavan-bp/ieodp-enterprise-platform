@@ -19,7 +19,7 @@ public class WebConfig implements WebMvcConfigurer {
     
     private final ApiVersionInterceptor apiVersionInterceptor;
 
-    @Value("${app.cors.allowed-origins:http://localhost:3000,http://localhost:*,http://18.204.221.219,http://18.204.221.219:80}")
+    @Value("${app.cors.allowed-origins:http://localhost:3000,http://localhost:*,http://18.204.221.219,http://18.204.221.219:80,http://184.72.113.212,http://184.72.113.212:80}")
     private List<String> allowedOrigins;
     
     @Override

@@ -14,8 +14,7 @@ public class PythonServiceConfig {
     /**
      * Base URL of the Python service (e.g., http://localhost:8000)
      */
-    //private String baseUrl = " http://localhost:8000";
-    private String baseUrl = "http://18.204.221.219:8000";
+    private String baseUrl = "http://184.72.113.212:8000";
     
     /**
      * Connection timeout in milliseconds

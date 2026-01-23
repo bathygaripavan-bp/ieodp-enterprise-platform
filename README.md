@@ -90,6 +90,6 @@ The UI provides an interactive dashboard for managing workflows and users.
 
 ## API Documentation & Interfaces
 
-- **Java Backend (Swagger)**: http://localhost:8080/swagger-ui.html
+- **Java Backend (Swagger)**: http://localhost:8080/swagger-ui/index.html
 - **Python Service (Swagger)**: http://localhost:8000/docs
 - **Frontend UI Dashboard**: http://localhost:5173

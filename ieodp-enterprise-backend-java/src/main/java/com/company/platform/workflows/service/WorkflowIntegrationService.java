@@ -50,8 +50,11 @@ public class WorkflowIntegrationService {
             WorkflowTriggerRequest request,
             User currentUser) {
         
+        // Set default source if not provided
+        String source = request.getSource() != null ? request.getSource() : "manual";
+        
         log.info("Triggering workflow: name={}, source={}, user={}", 
-                workflowName, request.getSource(), currentUser.getUsername());
+                workflowName, source, currentUser.getUsername());
         
         String correlationId = CorrelationIdUtil.getOrGenerateCorrelationId();
         
@@ -90,6 +93,8 @@ public class WorkflowIntegrationService {
         WorkflowItem workflow = workflowRepository.findById(workflowId)
                 .orElseThrow(() -> new NotFoundException("Workflow not found: " + workflowId));
         
+        String source = request.getSource() != null ? request.getSource() : "manual";
+        
         // If action is provided, perform state transition
         if (request.getAction() != null) {
             try {
@@ -110,10 +115,10 @@ public class WorkflowIntegrationService {
                         "WorkflowItem",
                         workflow.getId(),
                         String.format("Workflow triggered by %s: %s -> %s", 
-                                request.getSource(), oldState, newState),
+                                source, oldState, newState),
                         currentUser,
-                        Map.of("state", oldState.name(), "source", request.getSource()),
-                        Map.of("state", newState.name(), "source", request.getSource())
+                        Map.of("state", oldState.name(), "source", source),
+                        Map.of("state", newState.name(), "source", source)
                 );
                 
                 return WorkflowTriggerResponse.builder()
@@ -157,6 +162,8 @@ public class WorkflowIntegrationService {
         
         log.info("Handling workflow trigger by name: {}", workflowName);
         
+        String source = request.getSource() != null ? request.getSource() : "manual";
+        
         // For named workflows like "periodic_sync", we can:
         // 1. Create a new workflow item
         // 2. Or just acknowledge the trigger
@@ -166,7 +173,7 @@ public class WorkflowIntegrationService {
         
         Map<String, Object> responseData = new HashMap<>();
         responseData.put("workflowName", workflowName);
-        responseData.put("source", request.getSource());
+        responseData.put("source", source);
         if (request.getPayload() != null) {
             responseData.put("payload", request.getPayload());
         }
@@ -180,7 +187,7 @@ public class WorkflowIntegrationService {
                 AuditAction.WORKFLOW_CREATED,
                 "WorkflowIntegration",
                 null,
-                String.format("Workflow trigger received: %s from %s", workflowName, request.getSource()),
+                String.format("Workflow trigger received: %s from %s", workflowName, source),
                 currentUser,
                 null,
                 auditData

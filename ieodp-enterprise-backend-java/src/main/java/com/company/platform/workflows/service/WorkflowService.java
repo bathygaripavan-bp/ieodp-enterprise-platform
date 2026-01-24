@@ -37,14 +37,20 @@ public class WorkflowService {
     private final AuditService auditService;
 
     // ------------------------------------------------------------
-    // CREATE WORKFLOW (Admin + Manager)
+    // CREATE WORKFLOW  (Admin + Manager)
     // ------------------------------------------------------------
     @Transactional
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
-    public WorkflowResponse createWorkflow(WorkflowCreateRequest request, User currentUser)
-            throws JsonProcessingException {
+    public WorkflowResponse createWorkflow(WorkflowCreateRequest request, User currentUser) throws JsonProcessingException {
 
         log.info("Creating workflow: title={}, user={}", request.getTitle(), currentUser.getUsername());
+
+        User assignedTo = null;
+        if (request.getAssignedToId() != null) {
+            assignedTo = userRepository.findById(request.getAssignedToId()).orElse(null);
+        } else if (request.getAssignedToName() != null) {
+            assignedTo = userRepository.findByUsername(request.getAssignedToName()).orElse(null);
+        }
 
         WorkflowItem workflow = WorkflowItem.builder()
                 .title(request.getTitle())
@@ -53,9 +59,7 @@ public class WorkflowService {
                 .category(request.getCategory())
                 .state(WorkflowState.CREATED)
                 .createdBy(currentUser)
-                .assignedTo(request.getAssignedToId() != null
-                        ? userRepository.findById(request.getAssignedToId()).orElse(null)
-                        : null)
+                .assignedTo(assignedTo)
                 .build();
 
         workflow = workflowRepository.save(workflow);
@@ -67,10 +71,12 @@ public class WorkflowService {
                 "Workflow created",
                 currentUser,
                 null,
-                null);
+                null
+        );
 
         return toDTO(workflow);
     }
+
 
     // ------------------------------------------------------------
     // GET WORKFLOW BY ID (Admin + Manager + Reviewer + Viewer)
@@ -92,6 +98,7 @@ public class WorkflowService {
 
         return toDTO(workflow);
     }
+
 
     // ------------------------------------------------------------
     // GET ALL WORKFLOWS
@@ -115,6 +122,7 @@ public class WorkflowService {
                 .map(this::toDTO);
     }
 
+
     // ------------------------------------------------------------
     // SEARCH WORKFLOWS (Admin + Manager + Reviewer)
     // ------------------------------------------------------------
@@ -132,27 +140,22 @@ public class WorkflowService {
                 .map(this::toDTO);
     }
 
+
     // ------------------------------------------------------------
     // UPDATE WORKFLOW (Admin + Manager)
     // ------------------------------------------------------------
     @Transactional
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
-    public WorkflowResponse updateWorkflow(Long id, WorkflowUpdateRequest request, User currentUser)
-            throws JsonProcessingException {
+    public WorkflowResponse updateWorkflow(Long id, WorkflowUpdateRequest request, User currentUser) throws JsonProcessingException {
 
         WorkflowItem workflow = workflowRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Workflow not found: " + id));
 
         if (workflow.getState() == WorkflowState.CREATED) {
-            boolean isCreator = workflow.getCreatedBy().getId().equals(currentUser.getId());
-            boolean isAssigned = workflow.getAssignedTo() != null
-                    && workflow.getAssignedTo().getId().equals(currentUser.getId());
-            boolean isManagerOrAdmin = currentUser.getRole().getName().equalsIgnoreCase("ADMIN") ||
-                    currentUser.getRole().getName().equalsIgnoreCase("MANAGER");
-
-            if (!isCreator && !isAssigned && !isManagerOrAdmin) {
-                throw new ForbiddenException(
-                        "Only creator, assigned user, or manager can update workflow in CREATED state");
+            if (!workflow.getCreatedBy().getId().equals(currentUser.getId()) &&
+                    (workflow.getAssignedTo() == null ||
+                            !workflow.getAssignedTo().getId().equals(currentUser.getId()))) {
+                throw new ForbiddenException("Only creator or assigned user can update workflow in CREATED state");
             }
         }
 
@@ -177,11 +180,17 @@ public class WorkflowService {
             workflow.setPriority(request.getPriority());
         }
 
-        if (request.getAssignedToId() != null) {
-            User assignedTo = userRepository.findById(request.getAssignedToId())
-                    .orElseThrow(() -> new NotFoundException("User not found: " + request.getAssignedToId()));
-            oldValues.put("assignedTo",
-                    workflow.getAssignedTo() != null ? workflow.getAssignedTo().getUsername() : null);
+        if (request.getAssignedToId() != null || request.getAssignedToName() != null) {
+            User assignedTo = null;
+            if (request.getAssignedToId() != null) {
+                assignedTo = userRepository.findById(request.getAssignedToId())
+                        .orElseThrow(() -> new NotFoundException("User not found: " + request.getAssignedToId()));
+            } else if (request.getAssignedToName() != null) {
+                assignedTo = userRepository.findByUsername(request.getAssignedToName())
+                        .orElseThrow(() -> new NotFoundException("User not found: " + request.getAssignedToName()));
+            }
+            
+            oldValues.put("assignedTo", workflow.getAssignedTo() != null ? workflow.getAssignedTo().getUsername() : null);
             newValues.put("assignedTo", assignedTo.getUsername());
             workflow.setAssignedTo(assignedTo);
         }
@@ -195,18 +204,19 @@ public class WorkflowService {
                 "Workflow updated",
                 currentUser,
                 oldValues.isEmpty() ? null : oldValues,
-                newValues.isEmpty() ? null : newValues);
+                newValues.isEmpty() ? null : newValues
+        );
 
         return toDTO(workflow);
     }
+
 
     // ------------------------------------------------------------
     // TRANSITION WORKFLOW (Admin + Reviewer)
     // ------------------------------------------------------------
     @Transactional
-    @PreAuthorize("hasAnyRole('ADMIN', 'REVIEWER', 'MANAGER')")
-    public WorkflowResponse transitionWorkflow(Long id, WorkflowTransitionRequest request, User currentUser)
-            throws JsonProcessingException {
+    @PreAuthorize("hasAnyRole('ADMIN', 'REVIEWER')")
+    public WorkflowResponse transitionWorkflow(Long id, WorkflowTransitionRequest request, User currentUser) throws JsonProcessingException {
 
         WorkflowItem workflow = workflowRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Workflow not found: " + id));
@@ -224,10 +234,12 @@ public class WorkflowService {
                 "Workflow transitioned",
                 currentUser,
                 Map.of("oldState", workflow.getState().name()),
-                Map.of("newState", newState.name()));
+                Map.of("newState", newState.name())
+        );
 
         return toDTO(workflow);
     }
+
 
     // ------------------------------------------------------------
     // DELETE WORKFLOW (Admin only)
@@ -248,8 +260,10 @@ public class WorkflowService {
                 "Workflow deleted",
                 currentUser,
                 null,
-                null);
+                null
+        );
     }
+
 
     // Convert to DTO
     private WorkflowResponse toDTO(WorkflowItem workflow) {
@@ -260,8 +274,9 @@ public class WorkflowService {
                 .priority(workflow.getPriority())
                 .state(workflow.getState())
                 .category(workflow.getCategory())
+                .comments(workflow.getComments())
                 .assignedToId(workflow.getAssignedTo() != null ? workflow.getAssignedTo().getId() : null)
-                .assignedToUsername(workflow.getAssignedTo() != null ? workflow.getAssignedTo().getUsername() : null)
+                .assignedToUsername(workflow.getAssignedTo() != null ? workflow.getAssignedTo().getUsername() : "Unassigned")
                 .createdById(workflow.getCreatedBy().getId())
                 .createdByUsername(workflow.getCreatedBy().getUsername())
                 .createdAt(workflow.getCreatedAt())

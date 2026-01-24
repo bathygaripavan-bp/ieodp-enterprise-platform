@@ -72,6 +72,11 @@ public class WorkflowEngine {
      * Validates role-based permissions.
      */
     private boolean canUserPerformAction(WorkflowState currentState, WorkflowAction action, User user) {
+        // Allow ADMIN to perform any valid transition regardless of role assignment
+        if ("ADMIN".equalsIgnoreCase(user.getRole().getName())) {
+            return transitionRepository.findByFromStateAndAction(currentState, action).isPresent();
+        }
+
         List<WorkflowTransition> allowedTransitions = transitionRepository
                 .findByFromStateAndRole(currentState, user.getRole().getName());
         
@@ -83,8 +88,14 @@ public class WorkflowEngine {
      * Get all allowed actions for a user from current state.
      */
     public List<WorkflowAction> getAllowedActions(WorkflowItem item, User user) {
-        List<WorkflowTransition> transitions = transitionRepository
-                .findByFromStateAndRole(item.getState(), user.getRole().getName());
+        List<WorkflowTransition> transitions;
+
+        if ("ADMIN".equalsIgnoreCase(user.getRole().getName())) {
+            transitions = transitionRepository.findByFromState(item.getState());
+        } else {
+            transitions = transitionRepository
+                    .findByFromStateAndRole(item.getState(), user.getRole().getName());
+        }
         
         return transitions.stream()
                 .map(WorkflowTransition::getAction)

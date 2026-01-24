@@ -51,6 +51,7 @@ export default function EditWorkflow() {
         e.preventDefault();
         setSaving(true);
         try {
+<<<<<<< HEAD
             const payload = {
                 title: workflow.title,
                 description: workflow.description,
@@ -63,6 +64,12 @@ export default function EditWorkflow() {
         } catch (err: any) {
             console.error("Update failed:", err.response?.data || err);
             alert("Update failed: " + (err.response?.data?.message || "Internal Server Error"));
+=======
+            await workflowsApi.update(Number(id), workflow);
+            navigate("/workflows");
+        } catch (err: any) {
+            alert("Update failed");
+>>>>>>> 111b7e23 (refactor: update chunk imports and fix Grid component usage)
         } finally {
             setSaving(false);
         }

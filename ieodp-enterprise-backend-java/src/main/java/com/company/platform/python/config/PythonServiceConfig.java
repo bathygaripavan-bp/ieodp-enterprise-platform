@@ -19,6 +19,7 @@ public class PythonServiceConfig {
     /**
      * Connection timeout in milliseconds
      */
+
     private int connectTimeout = 5000;
     
     /**

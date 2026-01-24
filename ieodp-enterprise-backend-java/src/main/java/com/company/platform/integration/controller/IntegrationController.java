@@ -71,8 +71,12 @@ public class IntegrationController {
     )
     public ResponseEntity<ApiResponse<WorkflowTriggerResponse>> triggerWorkflow(
             @RequestParam(required = false) String workflowName,
-            @Valid @RequestBody WorkflowTriggerRequest request,
+            @Valid @RequestBody(required = false) WorkflowTriggerRequest request,
             @AuthenticationPrincipal User currentUser) {
+        
+        if (request == null) {
+            request = new WorkflowTriggerRequest();
+        }
         
         log.info("Integration workflow trigger: name={}, source={}", 
                 workflowName != null ? workflowName : "default", request.getSource());

@@ -48,7 +48,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         String token = authHeader.substring(PREFIX.length());
-        String username = jwtService.extractUsername(token);
+        String username = null;
+
+        try {
+            username = jwtService.extractUsername(token);
+        } catch (Exception e) {
+            log.warn("[{}] Failed to process JWT token: {}", correlationId, e.getMessage());
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
@@ -61,7 +69,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
             // 🔥 Extract role from token & normalize
-            String role = jwtService.extractRole(token);
+            String role = null;
+            try {
+                role = jwtService.extractRole(token);
+            } catch (Exception e) {
+                log.warn("[{}] Failed to extract role from JWT token: {}", correlationId, e.getMessage());
+                filterChain.doFilter(request, response);
+                return;
+            }
 
             if (role == null) {
                 log.warn("[{}] No role found in JWT for user {}", correlationId, username);

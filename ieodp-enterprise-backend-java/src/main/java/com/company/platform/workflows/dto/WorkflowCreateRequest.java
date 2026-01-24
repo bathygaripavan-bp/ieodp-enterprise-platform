@@ -25,4 +25,6 @@ public class WorkflowCreateRequest {
     private String category;
     
     private Long assignedToId;
+    
+    private String assignedToName;
 }

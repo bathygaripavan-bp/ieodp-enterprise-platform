@@ -24,6 +24,8 @@ public class WorkflowUpdateRequest {
     
     private Long assignedToId;
     
+    private String assignedToName;
+    
     @Size(max = 500, message = "Comments must not exceed 500 characters")
     private String comments;
 }

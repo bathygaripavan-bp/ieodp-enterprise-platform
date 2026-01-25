@@ -1,4 +1,3 @@
-import React from "react";
 import {
   Box,
   Button,
@@ -8,6 +7,8 @@ import {
   Divider,
   IconButton,
   InputAdornment,
+  Alert,
+  CircularProgress,
 } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { motion } from "framer-motion";
@@ -15,6 +16,7 @@ import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../app/hooks";
 import { login } from "./authSlice";
 import type { Role } from "../types/auth";
+import { useState, useEffect } from "react";
 
 import { authApi } from "../api/auth.api";
 
@@ -62,24 +64,30 @@ export default function Login() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAppSelector((state) => state.auth);
 
-  const [mode, setMode] = React.useState<"login" | "register">("login");
+  const [mode, setMode] = useState<"login" | "register">("login");
 
   // Fields
-  const [username, setUsername] = React.useState("");
-  const [password, setPassword] = React.useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
 
-  const [firstName, setFirstName] = React.useState("");
-  const [lastName, setLastName] = React.useState("");
-  const [confirmPassword, setConfirmPassword] = React.useState("");
-  const [selectedRole, setSelectedRole] = React.useState<Role | null>(null);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
 
-  const [bgImage, setBgImage] = React.useState(getRandomEmployeeImage());
+  const [bgImage, setBgImage] = useState(getRandomEmployeeImage());
 
-  const [showPassword, setShowPassword] = React.useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  const [loading, setLoading] = useState(false);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   // Background handling
-  React.useEffect(() => {
+  useEffect(() => {
     if (mode === "login") {
       setBgImage(getRandomEmployeeImage());
     } else if (mode === "register" && selectedRole) {
@@ -106,7 +114,7 @@ export default function Login() {
   };
 
   // Redirect when authenticated
-  React.useEffect(() => {
+  useEffect(() => {
     if (isAuthenticated) {
       const role = localStorage.getItem("role") || "";
       const redirectUrl = getRedirectPath(role);
@@ -114,8 +122,85 @@ export default function Login() {
     }
   }, [isAuthenticated, navigate]);
 
+  // VALIDATION LOGIC
+  const validate = () => {
+    const errors: Record<string, string> = {};
+
+    if (mode === "login") {
+      // Username
+      if (!username) errors.username = "Username is required";
+      else if (/\s/.test(username)) errors.username = "Username cannot contain spaces";
+      else if (username.length < 3) errors.username = "Username must be at least 3 characters";
+      else if (username.length > 100) errors.username = "Username too long";
+      else if (username.includes("@") && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(username)) {
+        errors.username = "Enter a valid email address";
+      }
+
+      // Password
+      if (!password) errors.password = "Password is required";
+      else if (password.length < 8) errors.password = "Password must be at least 8 characters";
+      else if (password.length > 64) errors.password = "Password too long";
+      else if (/^\s|\s$/.test(password)) errors.password = "Password cannot have leading or trailing spaces";
+
+    } else {
+      // Register
+      // First Name
+      if (!firstName) errors.firstName = "First Name is required";
+      else if (!/^[A-Za-z]+$/.test(firstName)) errors.firstName = "First Name must contain only alphabets";
+      else if (firstName.length < 2) errors.firstName = "First Name must be at least 2 characters";
+      else if (firstName.length > 50) errors.firstName = "First Name too long";
+
+      // Last Name
+      if (!lastName) errors.lastName = "Last Name is required";
+      else if (!/^[A-Za-z]+$/.test(lastName)) errors.lastName = "Last Name must contain only alphabets";
+      else if (lastName.length < 2) errors.lastName = "Last Name must be at least 2 characters";
+      else if (lastName.length > 50) errors.lastName = "Last Name too long";
+
+      // Username (Email)
+      if (!username) errors.username = "Username is required";
+      else if (/\s/.test(username)) errors.username = "Username cannot contain spaces";
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(username)) errors.username = "Enter a valid email address";
+      else if (username.length < 5) errors.username = "Username must be at least 5 characters";
+      else if (username.length > 100) errors.username = "Username too long";
+
+      // Password
+      if (!password) errors.password = "Password is required";
+      else if (password.length < 8) errors.password = "Password must be at least 8 characters";
+      else if (password.length > 64) errors.password = "Password too long";
+      else if (/\s/.test(password)) errors.password = "Password cannot contain spaces";
+      else {
+        const hasUpper = /[A-Z]/.test(password);
+        const hasLower = /[a-z]/.test(password);
+        const hasNumber = /\d/.test(password);
+        const hasSpecial = /[@#$%&*]/.test(password);
+        if (!hasUpper || !hasLower || !hasNumber || !hasSpecial) {
+          errors.password = "Password must meet complexity requirements";
+        }
+      }
+
+      // Confirm Password
+      if (!confirmPassword) errors.confirmPassword = "Confirm Password is required";
+      else if (confirmPassword !== password) errors.confirmPassword = "Passwords do not match";
+
+      // Role
+      if (!selectedRole) errors.selectedRole = "Please select a role";
+    }
+    return errors;
+  };
+
+  const validationErrors = validate();
+  const isFormValid = Object.keys(validationErrors).length === 0;
+
+  const handleBlur = (field: string) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+  };
+
   // LOGIN FUNCTION
   const handleLogin = async () => {
+    if (!isFormValid) return;
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
     try {
       const res = await authApi.login({ username, password });
 
@@ -153,23 +238,20 @@ export default function Login() {
           email,
         }
       }));
-    } catch (error) {
-      alert("Invalid username or password");
-      console.error(error);
+    } catch (err: any) {
+      console.error(err);
+      setError("Invalid username or password");
+    } finally {
+      setLoading(false);
     }
   };
 
   // REGISTER FUNCTION
   const handleRegister = async () => {
-    if (!selectedRole) {
-      alert("Please select a role");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      alert("Passwords do not match");
-      return;
-    }
+    if (!isFormValid) return;
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
 
     try {
       await authApi.register({
@@ -181,17 +263,20 @@ export default function Login() {
         role: selectedRole,
       } as any);
 
-      alert("Registration successful. Please sign in.");
+      setSuccess("Registration successful. Please sign in.");
       setMode("login");
       setPassword("");
       setConfirmPassword("");
     } catch (error: any) {
       console.error("Registration error:", error);
-
-      alert(
-        error?.response?.data?.message ||
-        "Registration failed. Try a different username."
-      );
+      const msg = error?.response?.data?.message || "Registration failed.";
+      if (msg.toLowerCase().includes("exist") || error?.response?.status === 409) {
+        setError("Username already exists");
+      } else {
+        setError(msg);
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -274,6 +359,14 @@ export default function Login() {
           {mode === "login" ? "Sign In" : "Register"}
         </Typography>
 
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
+        )}
+
+        {success && (
+          <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>
+        )}
+
         {mode === "register" && (
           <>
             <TextField
@@ -282,6 +375,9 @@ export default function Login() {
               margin="normal"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
+              onBlur={() => handleBlur("firstName")}
+              error={touched.firstName && !!validationErrors.firstName}
+              helperText={touched.firstName && validationErrors.firstName}
             />
             <TextField
               fullWidth
@@ -289,6 +385,9 @@ export default function Login() {
               margin="normal"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
+              onBlur={() => handleBlur("lastName")}
+              error={touched.lastName && !!validationErrors.lastName}
+              helperText={touched.lastName && validationErrors.lastName}
             />
           </>
         )}
@@ -299,6 +398,9 @@ export default function Login() {
           margin="normal"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
+          onBlur={() => handleBlur("username")}
+          error={touched.username && !!validationErrors.username}
+          helperText={touched.username && validationErrors.username}
         />
 
         <TextField
@@ -308,6 +410,9 @@ export default function Login() {
           margin="normal"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          onBlur={() => handleBlur("password")}
+          error={touched.password && !!validationErrors.password}
+          helperText={touched.password && validationErrors.password}
           InputProps={{
             endAdornment: (
               <InputAdornment position="end">
@@ -331,6 +436,9 @@ export default function Login() {
               margin="normal"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
+              onBlur={() => handleBlur("confirmPassword")}
+              error={touched.confirmPassword && !!validationErrors.confirmPassword}
+              helperText={touched.confirmPassword && validationErrors.confirmPassword}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
@@ -352,6 +460,9 @@ export default function Login() {
               margin="normal"
               value={selectedRole ?? ""}
               onChange={(e) => setSelectedRole(e.target.value as Role)}
+              onBlur={() => handleBlur("selectedRole")}
+              error={touched.selectedRole && !!validationErrors.selectedRole}
+              helperText={touched.selectedRole && validationErrors.selectedRole}
             >
               <MenuItem value="ADMIN">Admin</MenuItem>
               <MenuItem value="MANAGER">Manager</MenuItem>
@@ -364,19 +475,30 @@ export default function Login() {
         <Button
           fullWidth
           variant="contained"
+          disabled={!isFormValid || loading}
           sx={{ mt: 3 }}
           onClick={mode === "login" ? handleLogin : handleRegister}
         >
-          {mode === "login" ? "Sign In" : "Register"}
+          {loading ? <CircularProgress size={24} color="inherit" /> : (mode === "login" ? "Sign In" : "Register")}
         </Button>
 
         <Divider sx={{ my: 3 }} />
 
         <Typography textAlign="center">
           {mode === "login" ? (
-            <Button onClick={() => setMode("register")}>Register</Button>
+            <Button onClick={() => {
+              setMode("register");
+              setError(null);
+              setSuccess(null);
+              setTouched({});
+            }}>Register</Button>
           ) : (
-            <Button onClick={() => setMode("login")}>Sign In</Button>
+            <Button onClick={() => {
+              setMode("login");
+              setError(null);
+              setSuccess(null);
+              setTouched({});
+            }}>Sign In</Button>
           )}
         </Typography>
       </Box>
